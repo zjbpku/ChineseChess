@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.bitegames.cnchess.ui.ChessBoard
 import com.bitegames.cnchess.ui.GameOverDialog
 import com.bitegames.cnchess.ui.GameState
+import com.bitegames.cnchess.ui.getRandomMove
 import com.bitegames.cnchess.ui.theme.ChineseChessTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,15 +59,24 @@ fun ChessGame() {
             gameState = gameState,
             onMove = { newState -> 
                 gameState = newState // Update the game state when a move is made
+
+                // Check if it's the AI's turn
+                if (!newState.isRedTurn) {
+                    // AI makes a move
+                    val aiMove = getRandomMove(newState)
+                    aiMove?.let {
+                        gameState = newState.movePiece(it.piece, it.toX, it.toY)
+                    }
+                }
             }
         )
-
-        Button(
-            onClick = { gameState = gameState.undoMove() },
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(stringResource(R.string.btn_undo))
-        }
+//
+//        Button(
+//            onClick = { gameState = gameState.undoMove() },
+//            modifier = Modifier.padding(16.dp)
+//        ) {
+//            Text(stringResource(R.string.btn_undo))
+//        }
     }
 
     if (gameState.winner != null) {

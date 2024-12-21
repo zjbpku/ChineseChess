@@ -113,7 +113,7 @@ data class GameState(
         )
     }
 
-    private fun isValidMove(piece: ChessPiece, newX: Int, newY: Int): Boolean {
+    fun isValidMove(piece: ChessPiece, newX: Int, newY: Int): Boolean {
         println("Validating move for ${piece.type} from (${piece.x},${piece.y}) to ($newX,$newY)")
 
         // Basic validation
@@ -322,7 +322,7 @@ data class GameState(
             if (piece.y >= 5 && dy < 0) return false
         }
 
-        // Can only move one step at a time
+                // Can only move one step at a time
         if (dx > 1 || abs(dy) > 1) return false
         // Cannot move diagonally
         if (dx == 1 && abs(dy) == 1) return false
@@ -330,12 +330,24 @@ data class GameState(
         return true
     }
 
-    fun movePiece(piece: ChessPiece, newX: Int, newY: Int) {
-        if (isValidPawnMove(piece, newX, newY)) {
+    fun movePiece(piece: ChessPiece, newX: Int, newY: Int): GameState {
+        if (isValidMove(piece, newX, newY)) {
             // Update the piece's position
+            println("Moving piece: ${piece.type} from (${piece.x}, ${piece.y}) to ($newX, $newY)")
             piece.x = newX
             piece.y = newY
+
+            // Switch turn
+            return copy(
+                selectedPiece = null,
+                isRedTurn = !isRedTurn,
+                moveHistory = moveHistory + Move(piece, piece.x, piece.y, newX, newY, null),
+                winner = null // Update winner logic as needed
+            )
+        } else {
+            println("Invalid move attempted for piece: ${piece.type}")
         }
+        return this
     }
 
     companion object {

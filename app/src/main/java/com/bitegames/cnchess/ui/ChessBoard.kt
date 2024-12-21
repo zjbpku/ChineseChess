@@ -3,9 +3,12 @@ package com.bitegames.cnchess.ui
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -34,26 +37,34 @@ fun ChessBoard(
     val gridSize = boardSize / 9
     var selectedPiece by remember { mutableStateOf<ChessPiece?>(null) }
     var rememberedGameState by remember { mutableStateOf(gameState) }
-    val density = LocalDensity.current.density
 
     Box(
         modifier = modifier
             .fillMaxSize()
+            .background(Color(0xFFDEB887))
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val startX = size.width / 10
                     val gridWidth = (8 * size.width / 10) / 8
                     val gridHeight = size.height / 9
 
-                    val x = ((offset.x - startX + gridWidth / 2) / gridWidth).toInt()
-                    val y = ((offset.y + gridHeight / 2) / gridHeight).toInt()
+                    // Calculate the grid position based on the click
+                    val x = ((offset.x - startX) / gridWidth).toInt()
+                    val y = ((offset.y) / gridHeight).toInt()
                     val boardY = 9 - y
 
+                    // Check if the click is within the bounds of the board
                     if (x in 0..8 && boardY in 0..9) {
+                        // Check if the click is near any piece
                         val touchedPiece = rememberedGameState.pieces.find {
-                            it.x == x && it.y == boardY
+                            // Calculate the position of the piece
+                            val pieceX = startX + it.x * gridWidth
+                            val pieceY = (9 - it.y) * gridSize
+                            // Calculate the distance from the click to the piece
+                            val distance = ((offset.x - pieceX) * (offset.x - pieceX) + (offset.y - pieceY) * (offset.y - pieceY)).toDouble()
+                            // Check if the distance is within a certain radius (e.g., half the grid width)
+                            distance <= (gridWidth / 2) * (gridWidth / 2) // Adjust the radius as needed
                         }
-                        println("touched piece: $touchedPiece")
 
                         // First click - select piece
                         if (selectedPiece == null) {
@@ -61,6 +72,15 @@ fun ChessBoard(
                                 selectedPiece = touchedPiece
                                 rememberedGameState = rememberedGameState.selectPiece(touchedPiece)
                                 onMove(rememberedGameState)
+
+                                // If the selected piece is black, let the AI make a move
+                                if (!touchedPiece.isRed) {
+                                    val aiMove = getRandomMove(rememberedGameState)
+                                    aiMove?.let {
+                                        rememberedGameState = rememberedGameState.movePiece(it.piece, it.toX, it.toY)
+                                        onMove(rememberedGameState) // Update the game state after AI move
+                                    }
+                                }
                             }
                         }
                         // Second click - move piece or select new piece
@@ -91,7 +111,8 @@ fun ChessBoard(
     ) {
         Canvas(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .onSizeChanged { size ->
                     boardSize = min(size.width, size.height).toFloat()
                 }
